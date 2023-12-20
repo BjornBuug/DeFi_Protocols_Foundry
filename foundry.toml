@@ -1,0 +1,7 @@
+[profile.default]
+src = 'src'
+out = 'out'
+libs = ['lib']
+remappings = ['@openzeppelin/=lib/openzeppelin-contracts/']
+
+rpc_endpoints = { mainnet = "https://mainnet.infura.io/v3/184b35311791483b991c8951bb07c56c", optimism = "https://rpc.ankr.com/optimism" , fantom = "https://rpc.ankr.com/fantom", goerli = "https://eth-goerli.g.alchemy.com/v2/OdQ0p3CzjA6-OsZ19izcFTKAoa8jPc3H", arbitrum = "https://rpc.ankr.com/arbitrum" , bsc = "https://rpc.ankr.com/bsc"}
