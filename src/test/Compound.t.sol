@@ -76,13 +76,14 @@ contract ContractTest is Test {
     emit log_named_decimal_uint("balanceOfUnderlying:", balanceOfUnderlying, 8);
 
     console.log("----Test supply interest ----");
-    // Passing some blocks starting from the blocknumber when the fork was created.
+    // Advancing a number of blocks from the block number at which the fork was initiated
     vm.roll(15337706);  // Get interest per block. 
     exchangeRate = C_WBTC.exchangeRateCurrent();
+
     emit log_named_decimal_uint("exchangeRate:", exchangeRate, 18);
+
     balanceOfUnderlying = C_WBTC.balanceOfUnderlying(address(this));
     emit log_named_decimal_uint("balanceOfUnderlying:", balanceOfUnderlying, 8);  
-
 
     console.log("----Test Redeem----");
     uint cTokenAmount = C_WBTC.balanceOf(address(this));
@@ -90,16 +91,15 @@ contract ContractTest is Test {
     emit log_named_uint("Redeemed BTC:", WBTC.balanceOf(address(this)));
     balanceOfUnderlying = C_WBTC.balanceOfUnderlying(address(this));
     emit log_named_uint("balanceOfUnderlying:", balanceOfUnderlying);
+
   }
 
   
 
-
-
   function testBorrow() public {
     console.log("----Before testing supply, all status:----");
     exchangeRate = C_WBTC.exchangeRateCurrent();
-    emit log_named_uint("exchangeRate:", supplyRate);
+    emit log_named_uint("exchangeRate:", exchangeRate);
 
     supplyRate = C_WBTC.supplyRatePerBlock();
     emit log_named_uint("supplyRate:", supplyRate);
@@ -110,35 +110,41 @@ contract ContractTest is Test {
     balanceOfUnderlying = C_WBTC.balanceOfUnderlying(address(this));
     emit log_named_uint("balanceOfUnderlying:", balanceOfUnderlying);
 
-    C_WBTC.mint(100000000); // supply 1 btc.
+    C_WBTC.mint(100000000); // supply 1 btc. 
 
     console.log("----Test Borrow----");
 
-    borrow(address(CDAI),18);
+    borrow(address(CDAI), 18);
+
     CDAI.borrowBalanceCurrent(address(this));
+
     borrowedBalance = CDAI.borrowBalanceCurrent(address(this));
+
     emit log_named_uint("borrowedBalance:", borrowedBalance/1e18);
 
     emit log_named_uint("Borrowed DAI:", DAI.balanceOf(address(this))/1e18);
+    emit log_named_uint("Balance of Borrowed cDAI:", CDAI.balanceOf(address(this))/1e18);
 
     comptroller.getAccountLiquidity(address(this));
 
     console.log("----Test Repay----");
     repay(address(DAI),address(CDAI),MAX_INT);
     emit log_named_uint("Borrowed DAI:", DAI.balanceOf(address(this)));
-
+    
 
     console.log("----Test Redeem----");
     uint cTokenAmount = C_WBTC.balanceOf(address(this));
     C_WBTC.redeem(cTokenAmount);
+    
     emit log_named_uint("Redeemed BTC:", WBTC.balanceOf(address(this))); //0.99999999 btc
     balanceOfUnderlying = C_WBTC.balanceOfUnderlying(address(this));
     emit log_named_uint("supplied:", balanceOfUnderlying);
   }
 
+
+
   function testliquidate() public {
     //getCollateralFactor
-
     console.log("----Test Supply: 1 BTC----");
     C_WBTC.mint(100000000); // supply 1 btc.
     emit log_named_decimal_uint("C_WBTC balance of borrower:", C_WBTC.balanceOf(address(this)),8);
@@ -146,7 +152,7 @@ contract ContractTest is Test {
     emit log_named_decimal_uint("colFactor: %", colFactor,16);
 
     supplied = C_WBTC.balanceOfUnderlying(address(this));
-    emit log_named_decimal_uint("supplied: ", supplied/100,6);
+    emit log_named_decimal_uint("supplied: ", supplied/100, 6);
 
     price = priceFeed.getUnderlyingPrice(address(CDAI));
     emit log_named_decimal_uint("CDAI price: ", price,18);
@@ -178,7 +184,8 @@ contract ContractTest is Test {
     
     CDAI.borrowBalanceCurrent(address(this));
     borrowedBalance = CDAI.borrowBalanceCurrent(address(this));
-    emit log_named_decimal_uint("borrowedBalance:", borrowedBalance,18);
+    emit log_named_decimal_uint("borrowedBalance:", borrowedBalance, 18);
+
     ( rerror,  liquidity,  shortfall) = comptroller.getAccountLiquidity(
       address(this)
     );
@@ -188,10 +195,10 @@ contract ContractTest is Test {
 
     vm.roll(12866077);
     console.log("----After some blocks---");
-    liqbalance =DAI.balanceOf(0xcd6Eb888e76450eF584E8B51bB73c76ffBa21FF2);
+    liqbalance = DAI.balanceOf(0xcd6Eb888e76450eF584E8B51bB73c76ffBa21FF2);
     emit log_named_uint("Liquidator DAI balance:", liqbalance/10**18);
 
-// cheats.mockCall(address(comptroller),abi.encodeWithSelector(Comptroller.getAccountLiquidity.selector),abi.encode(0,0,1000000000000000000));
+    // cheats.mockCall(address(comptroller),abi.encodeWithSelector(Comptroller.getAccountLiquidity.selector),abi.encode(0,0,1000000000000000000));
     // problem here: how to manipulate price or borrow amount to make collateral to be liquidated?
     ( error,  liquidity, shortfall) = comptroller.getAccountLiquidity(
       address(this)
@@ -243,6 +250,7 @@ contract ContractTest is Test {
     
   }
 
+
   function estimateBalanceOfUnderlying() public returns (uint) {
     uint cTokenBal = C_WBTC.balanceOf(address(this)); // 8 decimals
 
@@ -254,27 +262,34 @@ contract ContractTest is Test {
     // Note: Division by 10**18 is used to adjust for exchange rate's scaling(1e18)
     return (cTokenBal * exchangeRate) / 10**(18 + decimals - cTokenDecimals);
 
-
   }
 
   
 
-    // enter market and borrow
+  // enter market and borrow
   function borrow(address _cTokenToBorrow, uint _decimals) public {
     // enter market
     // enter the supply market so you can borrow another type of asset
     address[] memory cTokens = new address[](1);
-    cTokens[0] = address(cToken);
+    cTokens[0] = address(cToken); // cToken = cwbtc
+
+    // Call to Compound's Comptroller to include the asset in the account's liquidity calculation(cwbtc)
     uint[] memory errors = comptroller.enterMarkets(cTokens);
     require(errors[0] == 0, "Comptroller.enterMarkets failed.");
 
-    // check liquidity
+
+    // check how much the current account have in liquidity/Collateral to be able to borrow
     (uint error, uint liquidity, uint shortfall) = comptroller.getAccountLiquidity(
       address(this)
     );
+
+    emit log_named_decimal_uint("Liquidity", liquidity, 18);
+    console.log("shortfall", shortfall);
+
     require(error == 0, "error");
-    require(shortfall == 0, "shortfall > 0");
+    require(shortfall == 0, "shortfall > 0");  // The safe limit that a user can borrower based on their liquidity
     require(liquidity > 0, "liquidity = 0");
+
 
     // calculate max borrow
     price = priceFeed.getUnderlyingPrice(_cTokenToBorrow);
@@ -283,16 +298,20 @@ contract ContractTest is Test {
     // price - USD scaled up by 1e18
     // decimals - decimals of token to borrow
     uint maxBorrow = (liquidity * (10**_decimals)) / price;
-    emit log_named_uint("maxBorrow", maxBorrow);
+    emit log_named_decimal_uint("maxBorrow", maxBorrow, 18);
 
     require(maxBorrow > 0, "max borrow = 0");
 
     // borrow 50% of max borrow
     uint amount = (maxBorrow * 50) / 100;
-   // emit log_named_uint("amount:", amount);   
+
+    // emit log_named_uint("amount:", amount);   
     //CErc20(_cTokenToBorrow).borrow(amount) ;
     require(CErc20(_cTokenToBorrow).borrow(amount) == 0, "borrow failed");
+
   }
+
+
 
   function repay(
     address _tokenBorrowed,
